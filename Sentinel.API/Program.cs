@@ -1,9 +1,11 @@
-using Microsoft.EntityFrameworkCore;
-using Sentinel.Persistence.Context;
+using Sentinel.Application.DependencyInjection;
+using Sentinel.Infrastructure.DependencyInjection;
 using Sentinel.Persistence.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure();
 builder.Services.AddPersistence(builder.Configuration);
 
 
