@@ -8,6 +8,8 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
 builder.Services.AddPersistence(builder.Configuration);
 
+builder.Services.AddControllers();
+
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -22,6 +24,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.MapControllers();
 
 app.UseHttpsRedirection();
 

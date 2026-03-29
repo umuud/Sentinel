@@ -28,6 +28,7 @@ public class Account : AuditableEntity
         IsActive=true;
 
         CreatedDate=DateTime.UtcNow;
+        CreatedBy="system";
     }
 
     public void ChangeEmail(string newEmail)
