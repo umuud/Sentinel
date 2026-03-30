@@ -1,8 +1,10 @@
+using System.IdentityModel.Tokens.Jwt;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentinel.Application.Features.Auth.Login;
 using Sentinel.Application.Features.Auth.Register;
+using Sentinel.Application.Interfaces;
 
 namespace Sentinel.API.Controllers;
 
@@ -10,10 +12,13 @@ namespace Sentinel.API.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    private readonly ICurrentUserService _currentUserService;
     private readonly IMediator _mediator;
 
-    public AuthController(IMediator mediator)
+
+    public AuthController(ICurrentUserService currentUserService, IMediator mediator)
     {
+        _currentUserService = currentUserService;
         _mediator = mediator;
     }
 
@@ -21,7 +26,12 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public IActionResult Me()
     {
-        return Ok("Giriş başarılı 🔥");
+        return Ok(new
+        {
+            userId = _currentUserService.UserId,
+            email = _currentUserService.Email,
+            username = _currentUserService.Username
+        });
     }
 
     [HttpPost("login")]

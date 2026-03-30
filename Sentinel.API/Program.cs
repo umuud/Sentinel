@@ -1,7 +1,12 @@
+using System.IdentityModel.Tokens.Jwt;
 using Sentinel.API.Extensions;
 using Sentinel.Application.DependencyInjection;
 using Sentinel.Infrastructure.DependencyInjection;
 using Sentinel.Persistence.DependencyInjection;
+
+// 🔥 CRITICAL: Claim mapping temizle
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +16,7 @@ builder.Services.AddInfrastructure();
 builder.Services.AddPersistence(builder.Configuration);
 
 //Jwt Service
-builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddApi(builder.Configuration);
 
 //Controllers
 builder.Services.AddControllers();
