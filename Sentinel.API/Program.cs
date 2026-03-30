@@ -1,13 +1,19 @@
+using Sentinel.API.Extensions;
 using Sentinel.Application.DependencyInjection;
 using Sentinel.Infrastructure.DependencyInjection;
 using Sentinel.Persistence.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//Layer Registrations
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
 builder.Services.AddPersistence(builder.Configuration);
 
+//Jwt Service
+builder.Services.AddJwtAuthentication(builder.Configuration);
+
+//Controllers
 builder.Services.AddControllers();
 
 
@@ -24,6 +30,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+//Middlewares
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
