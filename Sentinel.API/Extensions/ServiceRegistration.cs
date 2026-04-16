@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Sentinel.API.Services;
 using Sentinel.Application.Interfaces;
 using System.Text;
+using System.Threading.RateLimiting;
 
 namespace Sentinel.API.Extensions;
 
@@ -45,6 +47,21 @@ public static class AuthenticationExtensions
                 // 🔥 CRITICAL: Claim isimlerini koru
                 NameClaimType = "username",
             };
+        });
+
+        // Rate Limiting
+        services.AddRateLimiter(options =>
+        {
+            options.AddSlidingWindowLimiter("login", limiterOptions =>
+            {
+                limiterOptions.PermitLimit = 10;
+                limiterOptions.Window = TimeSpan.FromMinutes(1);
+                limiterOptions.SegmentsPerWindow = 2;
+                limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                limiterOptions.QueueLimit = 0;
+            });
+
+            options.RejectionStatusCode = 429; // Too Many Requests
         });
 
         return services;

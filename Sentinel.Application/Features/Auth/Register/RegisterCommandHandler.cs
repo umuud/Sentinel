@@ -22,6 +22,10 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Guid>
         // Email kontrol
         if (await _accountRepository.EmailExistsAsync(request.Email, cancellationToken))
             throw new Exception("Bu email zaten kayıtlı");
+        //Username kontrol
+        if (await _accountRepository.UsernameExistsAsync(request.Username, cancellationToken))
+            throw new Exception("Bu username zaten kayıtlı");
+
 
         // Hash
         var passwordHash = _passwordHasher.Hash(request.Password);

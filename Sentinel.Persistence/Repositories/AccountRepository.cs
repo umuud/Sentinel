@@ -41,4 +41,9 @@ public class AccountRepository : IAccountRepository
     {
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken)
+    {
+        return await _context.Accounts.AnyAsync(x => x.Username ==username,cancellationToken);
+    }
 }

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Sentinel.Application.Interfaces;
+using Sentinel.Infrastructure.Security;
 using Sentinel.Infrastructure.Services;
 
 namespace Sentinel.Infrastructure.DependencyInjection;
@@ -11,6 +12,7 @@ public static class ServiceRegistration
         // 🔐 SERVICES
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtService, JwtService>();
+        services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
 
         return services;
     }

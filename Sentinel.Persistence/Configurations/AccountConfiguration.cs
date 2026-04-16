@@ -18,6 +18,9 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
             .IsRequired()
             .HasMaxLength(100);
 
+        builder.HasIndex(x => x.Username)
+            .IsUnique();
+            
         // Email
         builder.Property(x => x.Email)
             .IsRequired()

@@ -37,11 +37,10 @@ if (app.Environment.IsDevelopment())
 }
 
 //Middlewares
+app.UseHttpsRedirection();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
-app.UseHttpsRedirection();
 
 app.Run();

@@ -1,4 +1,3 @@
-using System.Data.Common;
 using Sentinel.Domain.Common;
 
 namespace Sentinel.Domain.Entities;
