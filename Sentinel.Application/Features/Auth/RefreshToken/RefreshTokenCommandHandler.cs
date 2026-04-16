@@ -42,6 +42,9 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, L
 
         if (account is null)
             throw new Exception("Kullanıcı bulunamadı");
+        
+        if (!account.IsActive)
+            throw new Exception("Hesap devre dışı");
 
         // 🔥 eski token iptal
         existingToken.Revoke();
