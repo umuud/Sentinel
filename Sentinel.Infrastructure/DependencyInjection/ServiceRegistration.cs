@@ -15,11 +15,13 @@ public static class ServiceRegistration
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
-        services.AddSingleton<ITokenBlacklistService, RedisTokenBlacklistService>();
 
         // 🔴 REDIS
         services.AddSingleton<IConnectionMultiplexer>(_ =>
             ConnectionMultiplexer.Connect(configuration["Redis:ConnectionString"]!));
+
+        services.AddSingleton<ITokenBlacklistService, RedisTokenBlacklistService>();
+        services.AddSingleton<ILoginAttemptService, RedisLoginAttemptService>();
 
         return services;
     }
