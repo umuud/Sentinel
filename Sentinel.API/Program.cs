@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using Sentinel.API.Extensions;
+using Sentinel.API.Middlewares;
 using Sentinel.Application.DependencyInjection;
 using Sentinel.Infrastructure.DependencyInjection;
 using Sentinel.Persistence.DependencyInjection;
@@ -12,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 //Layer Registrations
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
 
 //Jwt Service
@@ -38,6 +39,7 @@ if (app.Environment.IsDevelopment())
 
 //Middlewares
 app.UseHttpsRedirection();
+app.UseMiddleware<JwtBlacklistMiddleware>();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

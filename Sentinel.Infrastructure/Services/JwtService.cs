@@ -40,4 +40,27 @@ public class JwtService : IJwtService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    public string? GetJtiFromToken(string token)
+    {
+        var handler = new JwtSecurityTokenHandler();
+
+        if (!handler.CanReadToken(token))
+            return null;
+
+        var jwtToken = handler.ReadJwtToken(token);
+        return jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
+    }
+
+    public DateTime? GetExpiryFromToken(string token)
+    {
+        var handler = new JwtSecurityTokenHandler();
+
+        if (!handler.CanReadToken(token))
+            return null;
+
+        var jwtToken = handler.ReadJwtToken(token);
+        return jwtToken.ValidTo;
+    }
+
 }

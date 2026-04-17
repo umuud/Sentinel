@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Sentinel.Application.Features.Auth.Login;
+using Sentinel.Application.Features.Auth.Logout;
 using Sentinel.Application.Features.Auth.RefreshToken;
 using Sentinel.Application.Features.Auth.Register;
 using Sentinel.Application.Interfaces;
@@ -64,4 +65,14 @@ public class AuthController : ControllerBase
 
         return Ok(id);
     }
+
+        [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+    {
+        var token = Request.Headers["Authorization"].ToString()["Bearer ".Length..].Trim();
+        await _mediator.Send(new LogoutCommand(token), cancellationToken);
+        return NoContent();
+    }
+
 }
