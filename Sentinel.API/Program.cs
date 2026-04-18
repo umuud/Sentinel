@@ -4,9 +4,6 @@ using Sentinel.API.Middlewares;
 using Sentinel.Application.DependencyInjection;
 using Sentinel.Infrastructure.DependencyInjection;
 using Sentinel.Persistence.DependencyInjection;
-using Serilog;
-using Serilog.Formatting.Elasticsearch;
-using Serilog.Sinks.Elasticsearch;
 
 // 🔥 CRITICAL: Claim mapping temizle
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();

@@ -22,6 +22,7 @@ public class JwtService : IJwtService
         {
             new Claim(JwtRegisteredClaimNames.Sub, id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, email),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim("username", username)
         };
 
@@ -62,5 +63,4 @@ public class JwtService : IJwtService
         var jwtToken = handler.ReadJwtToken(token);
         return jwtToken.ValidTo;
     }
-
 }
