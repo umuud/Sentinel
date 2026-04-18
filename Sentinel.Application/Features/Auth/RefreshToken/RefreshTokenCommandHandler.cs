@@ -1,4 +1,6 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
+using Sentinel.Application.Exceptions;
 using Sentinel.Application.Features.Auth.Login;
 using Sentinel.Application.Interfaces;
 
@@ -10,17 +12,20 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, L
     private readonly IAccountRepository _accountRepository;
     private readonly IJwtService _jwtService;
     private readonly IRefreshTokenGenerator _refreshTokenGenerator;
+    private readonly ILogger<RefreshTokenCommandHandler> _logger;
 
     public RefreshTokenCommandHandler(
         IRefreshTokenRepository refreshTokenRepository,
         IAccountRepository accountRepository,
         IJwtService jwtService,
-        IRefreshTokenGenerator refreshTokenGenerator)
+        IRefreshTokenGenerator refreshTokenGenerator,
+        ILogger<RefreshTokenCommandHandler> logger)
     {
         _refreshTokenRepository = refreshTokenRepository;
         _accountRepository = accountRepository;
         _jwtService = jwtService;
         _refreshTokenGenerator = refreshTokenGenerator;
+        _logger = logger;
     }
 
     public async Task<LoginResult> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
@@ -29,28 +34,41 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, L
             .GetByTokenAsync(request.RefreshToken, cancellationToken);
 
         if (existingToken is null)
-            throw new Exception("Refresh token bulunamadı");
+        {
+            _logger.LogWarning("Token yenileme başarısız — token bulunamadı");
+            throw new UnauthorizedException("Refresh token bulunamadı");
+        }
 
         if (existingToken.IsRevoked)
-            throw new Exception("Token revoke edilmiş");
+        {
+            _logger.LogWarning("Token yenileme başarısız — token revoke edilmiş: {TokenId}", existingToken.Id);
+            throw new UnauthorizedException("Token revoke edilmiş");
+        }
 
         if (existingToken.IsExpired())
-            throw new Exception("Token süresi dolmuş");
+        {
+            _logger.LogWarning("Token yenileme başarısız — token süresi dolmuş: {TokenId}", existingToken.Id);
+            throw new UnauthorizedException("Token süresi dolmuş");
+        }
 
         var account = await _accountRepository
             .GetByIdAsync(existingToken.AccountId, cancellationToken);
 
         if (account is null)
-            throw new Exception("Kullanıcı bulunamadı");
-        
-        if (!account.IsActive)
-            throw new Exception("Hesap devre dışı");
+        {
+            _logger.LogWarning("Token yenileme başarısız — kullanıcı bulunamadı: {AccountId}", existingToken.AccountId);
+            throw new UnauthorizedException("Kullanıcı bulunamadı");
+        }
 
-        // 🔥 eski token iptal
+        if (!account.IsActive)
+        {
+            _logger.LogWarning("Token yenileme başarısız — hesap devre dışı: {AccountId}", account.Id);
+            throw new UnauthorizedException("Hesap devre dışı");
+        }
+
         existingToken.Revoke();
         await _refreshTokenRepository.UpdateAsync(existingToken, cancellationToken);
 
-        // 🔥 yeni token üret
         var newRefreshTokenValue = _refreshTokenGenerator.Generate();
 
         var newRefreshToken = new Sentinel.Domain.Entities.RefreshToken(
@@ -61,11 +79,12 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, L
         await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
         await _refreshTokenRepository.SaveChangesAsync(cancellationToken);
 
-        // 🔥 yeni access token
         var newAccessToken = _jwtService.GenerateToken(
             account.Id,
             account.Email,
             account.Username);
+
+        _logger.LogInformation("Token yenileme başarılı — AccountId: {AccountId}", account.Id);
 
         return new LoginResult
         {

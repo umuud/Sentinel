@@ -4,6 +4,9 @@ using Sentinel.API.Middlewares;
 using Sentinel.Application.DependencyInjection;
 using Sentinel.Infrastructure.DependencyInjection;
 using Sentinel.Persistence.DependencyInjection;
+using Serilog;
+using Serilog.Formatting.Elasticsearch;
+using Serilog.Sinks.Elasticsearch;
 
 // 🔥 CRITICAL: Claim mapping temizle
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
@@ -17,7 +20,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
 
 //Jwt Service
-builder.Services.AddApi(builder.Configuration);
+builder.Services.AddApi(builder.Configuration, builder.Host);
 
 //Controllers
 builder.Services.AddControllers();
@@ -38,6 +41,7 @@ if (app.Environment.IsDevelopment())
 }
 
 //Middlewares
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseMiddleware<JwtBlacklistMiddleware>();
 app.UseRateLimiter();
