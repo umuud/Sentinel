@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Sentinel.API.Options;
 using Sentinel.API.Services;
 using Sentinel.Application.Interfaces;
+using Sentinel.Infrastructure.Options;
 using Serilog;
 using Serilog.Formatting.Elasticsearch;
 using Serilog.Sinks.Elasticsearch;
@@ -21,9 +24,14 @@ public static class AuthenticationExtensions
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-        // SERILOG
-        hostBuilder.UseSerilog((context, config) =>
+        // ⚙️ OPTIONS
+        services.Configure<SerilogOptions>(configuration.GetSection(SerilogOptions.SectionName));
+
+        // 📋 SERILOG
+        hostBuilder.UseSerilog((context, sp, config) =>
         {
+            var serilogOptions = sp.GetRequiredService<IOptions<SerilogOptions>>().Value;
+
             config
                 .ReadFrom.Configuration(context.Configuration)
                 .Enrich.FromLogContext()
@@ -31,20 +39,18 @@ public static class AuthenticationExtensions
                 .Enrich.WithThreadId()
                 .WriteTo.Console(new ElasticsearchJsonFormatter())
                 .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(
-                    new Uri(context.Configuration["Serilog:ElasticsearchUrl"]!))
+                    new Uri(serilogOptions.ElasticsearchUrl))
                 {
                     AutoRegisterTemplate = true,
                     AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv7,
                     IndexFormat = $"sentinel-logs-{DateTime.UtcNow:yyyy.MM.dd}",
-                    NumberOfReplicas = 0,
-                    NumberOfShards = 1
+                    NumberOfReplicas = serilogOptions.NumberOfReplicas,
+                    NumberOfShards = serilogOptions.NumberOfShards
                 });
         });
 
-        // JWT
-        var key = configuration["Jwt:Key"];
-        var issuer = configuration["Jwt:Issuer"];
-        var audience = configuration["Jwt:Audience"];
+        // 🔐 JWT
+        var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()!;
 
         services.AddAuthentication(options =>
         {
@@ -62,17 +68,17 @@ public static class AuthenticationExtensions
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
 
-                ValidIssuer = issuer,
-                ValidAudience = audience,
+                ValidIssuer = jwtOptions.Issuer,
+                ValidAudience = jwtOptions.Audience,
 
                 IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(key!)),
+                    Encoding.UTF8.GetBytes(jwtOptions.Key)),
 
                 NameClaimType = "username",
             };
         });
 
-        // Rate Limiting
+        // 🚦 RATE LIMITING
         services.AddRateLimiter(options =>
         {
             options.AddSlidingWindowLimiter("login", limiterOptions =>

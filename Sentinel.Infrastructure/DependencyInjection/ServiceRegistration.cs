@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using Sentinel.Application.Interfaces;
 using Sentinel.Infrastructure.Messaging;
+using Sentinel.Infrastructure.Options;
 using Sentinel.Infrastructure.Security;
 using Sentinel.Infrastructure.Services;
 using StackExchange.Redis;
@@ -13,27 +15,36 @@ public static class ServiceRegistration
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        // ⚙️ OPTIONS
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<RedisOptions>(configuration.GetSection(RedisOptions.SectionName));
+        services.Configure<RabbitMqOptions>(configuration.GetSection(RabbitMqOptions.SectionName));
+
         // 🔐 SERVICES
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
 
         // 🔴 REDIS
-        services.AddSingleton<IConnectionMultiplexer>(_ =>
-            ConnectionMultiplexer.Connect(configuration["Redis:ConnectionString"]!));
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
+            return ConnectionMultiplexer.Connect(options.ConnectionString);
+        });
 
         services.AddSingleton<ITokenBlacklistService, RedisTokenBlacklistService>();
         services.AddSingleton<ILoginAttemptService, RedisLoginAttemptService>();
 
         // 🐇 RABBITMQ
-        services.AddSingleton<IConnection>(_ =>
+        services.AddSingleton<IConnection>(sp =>
         {
+            var options = sp.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
             var factory = new ConnectionFactory
             {
-                HostName = configuration["RabbitMQ:Host"]!,
-                Port = int.Parse(configuration["RabbitMQ:Port"]!),
-                UserName = configuration["RabbitMQ:Username"]!,
-                Password = configuration["RabbitMQ:Password"]!
+                HostName = options.Host,
+                Port = options.Port,
+                UserName = options.Username,
+                Password = options.Password
             };
             return factory.CreateConnection();
         });
