@@ -1,45 +1,43 @@
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.EntityFrameworkCore;
 using Sentinel.API.Extensions;
 using Sentinel.API.Middlewares;
 using Sentinel.Application.DependencyInjection;
 using Sentinel.Infrastructure.DependencyInjection;
+using Sentinel.Persistence.Context;
 using Sentinel.Persistence.DependencyInjection;
 
-// 🔥 CRITICAL: Claim mapping temizle
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 
-//Layer Registrations
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
-
-//Jwt Service
 builder.Services.AddApi(builder.Configuration, builder.Host);
-
-//Controllers
 builder.Services.AddControllers();
-
-
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// 🔥 Migration otomatik uygula
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    var db = scope.ServiceProvider.GetRequiredService<SentinelDbContext>();
+    db.Database.Migrate();
 }
 
-//Middlewares
+// Swagger her ortamda açık
+app.UseSwagger();
+app.UseSwaggerUI();
+
 app.UseMiddleware<GlobalExceptionMiddleware>();
-app.UseHttpsRedirection();
+
+if (app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+
 app.UseMiddleware<JwtBlacklistMiddleware>();
 app.UseRateLimiter();
 app.UseAuthentication();
